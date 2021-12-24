@@ -1,0 +1,242 @@
+#Abrindo arquivo e lendo 
+num=input("Qual grafo deseja analisar?")
+f = open("grafo_"+str(num)+'.txt', 'r')
+r=f.read()
+f.close()
+
+#Convertendo o arquivo lido r para um lista, e depois agrupando essa lista em lista de listas(arestas)
+graf=[]
+arestas=[]
+ver=''
+for x in r:
+    if x != " " and x!="\n":
+        ver+=x
+    else:
+        graf+=[int(ver)]
+        ver=''
+n=int(graf.pop(0))
+for i in range(0,len(graf),2):
+    arestas+=[[graf[i],graf[i+1]]]
+    
+#Função que retorna os dados sobre os graus dos vértices do grafo
+import statistics
+import copy
+def findg():
+    graus=[0]*n
+    for i in graf:
+        graus[i-1]+=1
+    gmin=min(graus)
+    gmax=max(graus)
+    gmed=sum(graus)/n
+    gmediana= statistics.median(graus)
+    return gmin,gmax,gmed,gmediana
+    
+    
+#funcao que escreve as informacoes pedidas no arquivo saida.txt
+def gerartxt():
+    aux1=findg()
+    print(aux1)
+    saida=open("saida.txt","w",encoding='utf-8')
+    saida.write("NUMERO VERTICES: ")
+    saida.write(str(n))
+    saida.write("\nNUMERO ARESTAS: ")
+    saida.write(str(len(arestas)))
+    saida.write("\nGRAU MINIMO: ")
+    saida.write(str(aux1[0]))
+    saida.write("\nGRAU MAXIMO: ")
+    saida.write(str(aux1[1]))
+    saida.write("\nGRAU MEDIO: ")
+    saida.write(str(aux1[2]))
+    saida.write("\nMEDIANA DE GRAU: ")
+    saida.write(str(aux1[3]))
+    saida.write("\nINFORMACOES COMPONENTES CONEXAS: ")
+    saida.write(str(compConex()))
+    
+    saida.close()
+    
+#funcao que retorna a visualizacao do grafo em formato de matriz de adjacencia
+import numpy as np
+import sys 
+np.set_printoptions(threshold=sys.maxsize) 
+def matadj():
+    A=np.eye(n,k=1000000000)
+    for i in range(0,len(arestas)):
+        A[arestas[i][0]-1][arestas[i][1]-1]=1
+        A[arestas[i][1]-1][arestas[i][0]-1]=1     
+    return A
+    
+#função que retorna a visualização do grafo em formato de lista de adjacência
+def listadj():
+    B={}
+    for i in range(n):
+        B[i+1]=[]
+    for i in range(len(arestas)):
+        B[arestas[i][0]].append(arestas[i][1])
+        B[arestas[i][1]].append(arestas[i][0])
+    
+    for i in range(len(B)):
+        B[i+1].sort()
+    return B
+
+#Função de BFS. Usando lista de adjacência como base.
+from collections import deque
+import array
+def BFSlis(v):
+    marc  =np.array([0 for i in range(n)])
+    pais  =np.array([0 for i in range(n)])
+    niveis=np.array([0 for i in range(n)])
+    fila=deque([])
+    lis=listadj()
+    componente=[]
+    
+    arvBFS=open("Árvore BFS.txt","w",encoding='utf-8')
+    arvBFS.write("Vértice: "+str(v)+", Nível: 0\n")
+    
+    marc[v-1]=1
+    componente.append(v)
+    fila.append(v)
+    while fila != deque([]):
+        q=fila.popleft()
+        for viz in lis[q]:
+            if marc[viz-1]==0:
+                marc[viz-1]=1
+                pais[viz-1]=q
+                niveis[viz-1]=niveis[q-1]+1
+                fila.append(viz)
+                componente.append(viz)
+                arvBFS.write("Vértice: "+str(viz)+", Nível: "+str(niveis[viz-1])+", Pai: "+str(q)+"\n")
+                
+    arvBFS.close()
+    return pais, niveis, componente
+#vdeinicio = int(input("Defina o vértice inicial: "))
+#BFS=BFSlis(vdeinicio)
+
+#Função de BFS. Usando matriz de adjacência como base.
+def BFSmat(inicio):
+    marc  =np.array([0 for i in range(n)])
+    pais  =np.array([0 for i in range(n)])
+    niveis=np.array([0 for i in range(n)])
+    fila=deque([])
+    grafo=matadj()
+    componente=[]
+    
+    arvBFS=open("Árvore DFS.txt", "w", encoding='utf-8')
+    arvBFS.write("Vértice: "+str(inicio)+", Nível: 0\n")
+    
+    fila.append(inicio)
+    while fila != deque([]):
+        q=fila.popleft()
+        for i in range(n):
+            if ((marc[i-1]==0) and (grafo[q-1][i-1]))==1:
+                marc[i-1]=1
+                pais[i-1]=q
+                niveis[i-1]=niveis[q-1]+1
+                fila.append(i)
+                componente.append(i)
+                arvBFS.write("Vértice: "+str(i)+", Nível: "+str(niveis[i-1])+", Pai: "+str(q)+"\n")
+                
+    arvBFS.close()
+    return pais, niveis, componente
+#vdeinicio = int(input("Defina o vértice inicial: "))
+#BFS=BFSmat(vdeinicio)
+
+#Função de DFS. Usando lista de adjacência como base.
+def DFSlis(v):
+    marc  =np.array([0 for i in range(n)])
+    pais  =np.array([0 for i in range(n)])
+    niveis=np.array([0 for i in range(n)])
+    pilha=deque([])
+    lis=listadj()
+    
+    arvDFS=open("Árvore DFS.txt", "w", encoding='utf-8')
+    arvDFS.write("Vértice: "+str(v)+", Nível: 0\n")
+    
+    pilha.append(v)
+    while pilha != deque([]):
+        q=pilha.pop()
+        if marc[q-1]==0:
+            marc[q-1]=1
+            for viz in lis[q]:
+                pilha.append(viz)
+                if pais[viz-1]==0 and viz != v:
+                    pais[viz-1]=q
+                    niveis[viz-1]=niveis[q-1]+1
+                    arvDFS.write("Vértice: "+str(viz)+", Nível: "+str(niveis[viz-1])+", Pai: "+str(q)+"\n")
+                    
+    arvDFS.close()
+    return pais, niveis
+#vdeinicio = int(input("Defina o vértice inicial:"))
+#DFS=DFSlis(vdeinicio)
+
+#Função de DFS. Usando matriz de adjacência como base.
+def DFSmat(inicio):
+    marc  =np.array([0 for i in range(n)])
+    pais  =np.array([0 for i in range(n)])
+    niveis=np.array([0 for i in range(n)])
+    pilha=deque([])
+    grafo=matadj()
+    
+    arvDFS=open("Árvore DFS.txt", "w", encoding='utf-8')
+    arvDFS.write("Vértice: "+str(inicio)+", Nível: 0\n")
+    
+    pilha.append(inicio)
+    while pilha != deque([]):
+        q=pilha.pop()
+        if marc[q-1]==0:
+            marc[q-1]=1
+            for i in range(n):
+                if (grafo[q-1][i-1])==1:
+                    pilha.append(i)
+                    if pais[i-1]==0 and i!=inicio:
+                        pais[i-1]=q
+                        niveis[i-1]=niveis[q-1]+1
+                        arvDFS.write("Vértice: "+str(i)+", Nível: "+str(niveis[i-1])+", Pai: "+str(q)+"\n")
+                        
+    arvDFS.close()
+    return pais, niveis
+#vdeinicio = int(input("Defina o vértice inicial:"))
+#DFS=DFSmat(vdeinicio)
+#print(DFS[0][9])
+#print(DFS[0][19])
+#print(DFS[0][29])
+
+#função que retorna a distância entre 2 vértices
+def dist2vert():
+    a=int(input("Escolha um vértice A: "))
+    b=int(input("Escolha um vértice B: "))
+    dist=BFSlis(a)[1][b-1]
+    if a==b:
+        return "É o mesmo vértice, distância 0"
+    elif dist==0:
+        return "Não existe caminho"
+    return dist
+
+#função que retorna as informações sobre componentes conexas do grafo
+def compConex():
+    conexo = np.array([0 for i in range(n)])
+    componentes=[]
+    indice=1
+    while indice <= n:
+        if conexo[indice-1]==0:
+            Busca=BFSlis(indice)
+            componentes.append(Busca[2])
+            for i in Busca[2]:
+                conexo[i-1]=1
+        indice=indice+1
+    compOrdem=sorted(componentes, key=len, reverse=True)
+    return "O grafo tem "+str(len(componentes))+" componentes", ["Componente número "+str(componentes.index(i)+1)+", de tamanho "+str(len(i))+" : "+ str(i) for i in compOrdem]
+
+#Função que busca aproximar o diametro de um grafo
+import random
+def diametro():
+    listAux=[]
+    if n<100:
+        for i in range(n):
+            listAux+=BFSlis(i+1)[1].tolist()
+    else:
+        i=0
+        while i<100:
+            a=random.randrange(1,n+1)
+            listAux+=BFSlis(a)[1].tolist()
+            i+=1
+    return max(listAux)
